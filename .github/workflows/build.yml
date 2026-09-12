@@ -1,0 +1,38 @@
+name: Build macOS DMG
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  build-macos:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Install dependencies
+        run: |
+          brew install openssl libssh2
+          npm install
+
+      - name: Build
+        env:
+          OPENSSL_DIR: /opt/homebrew/opt/openssl
+          LIBSSH2_SYS_USE_PKG_CONFIG: "1"
+          PKG_CONFIG_PATH: /opt/homebrew/opt/openssl/lib/pkgconfig
+        run: npm run tauri build
+
+      - name: Upload DMG
+        uses: actions/upload-artifact@v4
+        with:
+          name: EasyXShell-macOS
+          path: src-tauri/target/release/bundle/dmg/*.dmg
