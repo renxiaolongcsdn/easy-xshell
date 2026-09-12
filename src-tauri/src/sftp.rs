@@ -93,7 +93,8 @@ impl SftpManager {
             .into_iter()
             .filter_map(|(path_buf, stat)| {
                 let name = path_buf.file_name()?.to_string_lossy().to_string();
-                let is_dir = stat.file_type().map(|ft| ft.is_dir()).unwrap_or(false);
+                // ssh2::FileType 是 enum，用 perm 字位判断目录
+                let is_dir = stat.perm.map(|p| p & 0o40000 != 0).unwrap_or(false);
                 let size = stat.size.unwrap_or(0);
                 let permissions = stat.perm.map(|p| format!("{:o}", p));
                 let modified = stat.mtime.map(|t| {
@@ -144,7 +145,7 @@ impl SftpManager {
             .map_err(|e| format!("打开 SFTP 子系统失败: {}", e))?;
 
         let mut remote_file = sftp
-            .open(std::path::Path::new(remote_path), ssh2::READ, 0)
+            .open(std::path::Path::new(remote_path))
             .map_err(|e| format!("打开远程文件失败: {}", e))?;
 
         let mut contents = Vec::new();
