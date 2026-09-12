@@ -6,7 +6,7 @@ on:
   workflow_dispatch:
 
 jobs:
-  build-macos:
+  build-macos-arm:
     runs-on: macos-latest
     steps:
       - uses: actions/checkout@v4
@@ -18,26 +18,40 @@ jobs:
 
       - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: aarch64-apple-darwin
 
       - name: Install dependencies
         run: |
           brew install openssl libssh2
           npm install
 
-      - name: Build
+      - name: Build (ARM64)
         env:
           OPENSSL_DIR: /opt/homebrew/opt/openssl
           LIBSSH2_SYS_USE_PKG_CONFIG: "1"
           PKG_CONFIG_PATH: /opt/homebrew/opt/openssl/lib/pkgconfig
-        run: npm run tauri build -- --bundles dmg
+        run: npm run tauri build
 
-      - name: Fix permissions
+      - name: List outputs
         run: |
-          chmod -R 755 src-tauri/target/release/bundle/dmg/*.dmg || true
+          echo "=== DMG ==="
+          find src-tauri/target/release/bundle -name "*.dmg" -exec ls -lh {} \;
+          echo "=== APP ==="
+          find src-tauri/target/release/bundle -name "*.app" -exec ls -lh {} \;
 
       - name: Upload DMG
         uses: actions/upload-artifact@v4
         with:
-          name: EasyXShell-macOS
-          path: src-tauri/target/release/bundle/dmg/*.dmg
+          name: EasyXShell-macOS-ARM64
+          path: |
+            src-tauri/target/release/bundle/dmg/*.dmg
+          if-no-files-found: warn
+
+      - name: Upload APP
+        uses: actions/upload-artifact@v4
+        with:
+          name: EasyXShell-macOS-APP
+          path: |
+            src-tauri/target/release/bundle/macos/*.app
           if-no-files-found: warn
