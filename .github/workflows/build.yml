@@ -29,10 +29,15 @@ jobs:
           OPENSSL_DIR: /opt/homebrew/opt/openssl
           LIBSSH2_SYS_USE_PKG_CONFIG: "1"
           PKG_CONFIG_PATH: /opt/homebrew/opt/openssl/lib/pkgconfig
-        run: npm run tauri build
+        run: npm run tauri build -- --bundles dmg
+
+      - name: Fix permissions
+        run: |
+          chmod -R 755 src-tauri/target/release/bundle/dmg/*.dmg || true
 
       - name: Upload DMG
         uses: actions/upload-artifact@v4
         with:
           name: EasyXShell-macOS
           path: src-tauri/target/release/bundle/dmg/*.dmg
+          if-no-files-found: warn
